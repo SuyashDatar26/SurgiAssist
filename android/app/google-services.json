@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "431648024865",
+    "project_id": "ibip-test",
+    "storage_bucket": "ibip-test.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:431648024865:android:691829667315372d763660",
+        "android_client_info": {
+          "package_name": "com.example.surgiassist_ibip_lnct"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBoU_hiaH7iOM4q4LDQy2cQ84Kdha6iwek"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -26,8 +26,9 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
   Timer? _startDelayTimer;
 
   int _currentIndex = 0;
+
   bool _isListening = false;
-  bool _micLocked = false;
+  bool _micLocked = false; // 🔒 only true when leaving page
 
   // ================= INIT =================
 
@@ -50,15 +51,14 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
   // ================= MIC =================
 
   Future<void> _startMic() async {
-    if (!mounted || _micLocked) return;
+    if (!mounted || _micLocked || _isListening) return;
 
     final permission = await Permission.microphone.request();
     if (!permission.isGranted) return;
 
     final available = await _speech.initialize(
       onStatus: (status) {
-        // 🔁 Auto-restart listening after long silence
-        if (status == 'notListening' && !_micLocked) {
+        if ((status == 'notListening' || status == 'done') && !_micLocked) {
           _restartListening();
         }
       },
@@ -71,22 +71,25 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
 
     if (!available) return;
 
-    _listenContinuously();
+    _listen();
   }
 
-  void _listenContinuously() {
-    if (_isListening || _micLocked) return;
+  void _listen() {
+    if (_micLocked || _isListening) return;
 
-    debugPrint("🎙️ MIC LISTENING (continuous)");
+    debugPrint("🎙️ MIC LISTENING");
 
     _speech.listen(
-      listenFor: const Duration(hours: 1), // practically infinite
-      pauseFor: const Duration(seconds: 10),
+      listenFor: const Duration(minutes: 30),
+      pauseFor: const Duration(seconds: 8),
       partialResults: false,
+      cancelOnError: false,
       onResult: (result) {
         final text = result.recognizedWords.toLowerCase().trim();
-        debugPrint("🎤 Heard: $text");
-        _handleNlpCommand(text);
+        if (text.isNotEmpty) {
+          debugPrint("🎤 Heard: $text");
+          _handleNlpCommand(text);
+        }
       },
     );
 
@@ -95,9 +98,10 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
 
   void _restartListening() async {
     if (_micLocked) return;
+
     _isListening = false;
-    await Future.delayed(const Duration(milliseconds: 300));
-    _listenContinuously();
+    await Future.delayed(const Duration(milliseconds: 400));
+    _listen();
   }
 
   void _stopMic() {
@@ -111,59 +115,35 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
   // ================= NLP INTENT ENGINE =================
 
   void _handleNlpCommand(String speech) {
-    if (_micLocked || speech.isEmpty) return;
+    if (_micLocked) return;
 
-    final text = speech
-        .replaceAll(RegExp(r'[^\w\s]'), '')
-        .toLowerCase();
+    final text =
+    speech.replaceAll(RegExp(r'[^\w\s]'), '').toLowerCase();
 
-    // ---------- NEXT ----------
-    if (_containsAny(text, [
-      'next',
-      'forward',
-      'move ahead',
-      'go ahead',
-      'next image',
-      'next xray'
-    ])) {
+    bool commandExecuted = false;
+
+    if (_containsAny(text, ['next', 'forward', 'next image'])) {
       _nextImage();
-      return;
-    }
-
-    // ---------- PREVIOUS ----------
-    if (_containsAny(text, [
-      'previous',
-      'back',
-      'go back',
-      'move back',
-      'last image'
-    ])) {
+      commandExecuted = true;
+    } else if (_containsAny(text, ['previous', 'back', 'go back'])) {
       _previousImage();
-      return;
-    }
-
-    // ---------- ZOOM IN ----------
-    if (_containsAny(text, [
-      'zoom in',
-      'enlarge',
-      'increase zoom',
-      'closer',
-      'magnify'
-    ])) {
+      commandExecuted = true;
+    } else if (_containsAny(text, ['zoom in', 'enlarge', 'magnify'])) {
       _zoomIn();
-      return;
+      commandExecuted = true;
+    } else if (_containsAny(text, ['zoom out', 'reduce', 'minimize'])) {
+      _zoomOut();
+      commandExecuted = true;
     }
 
-    // ---------- ZOOM OUT ----------
-    if (_containsAny(text, [
-      'zoom out',
-      'reduce zoom',
-      'decrease zoom',
-      'farther',
-      'minimize'
-    ])) {
-      _zoomOut();
-      return;
+    /// 🔁 CRITICAL: restart mic after command execution
+    if (commandExecuted) {
+      _stopMic();
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (!_micLocked) {
+          _startMic();
+        }
+      });
     }
   }
 
@@ -207,7 +187,7 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
   // ================= BACK =================
 
   Future<bool> _onBackPressed() async {
-    _micLocked = true;
+    _micLocked = true; // 🔒 permanently stop mic
     _stopMic();
     Navigator.pop(context);
     return false;

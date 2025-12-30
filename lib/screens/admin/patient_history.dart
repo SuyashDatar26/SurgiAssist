@@ -5,6 +5,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../iamgeview_page.dart';
 import '../pdfview_page.dart';
+import '../surgeon/surgeon_dashboard.dart';
 
 class PatientHistoryPage extends StatefulWidget {
   final String patientId;
@@ -52,6 +53,24 @@ class _PatientHistoryPageState extends State<PatientHistoryPage> {
       _startMic,
     );
   }
+
+  Future<void> _goBackToSurgeonDashboard() async {
+    if (_isNavigating) return;
+    _isNavigating = true;
+
+    // 🔒 Lock & stop mic safely
+    _micLocked = true;
+    await _hardStopMic();
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const SurgeonDashboard()),
+          (route) => false, // ❌ remove all previous routes
+    );
+  }
+
 
   // ================= MIC CONTROL =================
 
@@ -237,66 +256,78 @@ class _PatientHistoryPageState extends State<PatientHistoryPage> {
   Widget build(BuildContext context) {
     _documents = (widget.patientData['documents'] ?? []) as List<dynamic>;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Patient History - ${widget.patientData['name']}"),
-        backgroundColor: Colors.tealAccent.withOpacity(0.3),
-      ),
-      backgroundColor: Colors.grey[600],
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            _buildInfoCard("Patient ID", widget.patientData['patientId'] ?? 'N/A'),
-            _buildInfoCard("Name", widget.patientData['name'] ?? 'N/A'),
-            _buildInfoCard("Age", "${widget.patientData['age'] ?? 'N/A'}"),
-            _buildInfoCard("Gender", widget.patientData['gender'] ?? 'N/A'),
-            _buildInfoCard("Phone", widget.patientData['phone'] ?? 'N/A'),
-            _buildInfoCard("Email", widget.patientData['email'] ?? 'N/A'),
-            _buildInfoCard(
-                "Assigned Doctor", widget.patientData['assignedDoctor'] ?? 'N/A'),
-            const SizedBox(height: 20),
-            const Text(
-              "📁 Uploaded Documents",
-              style: TextStyle(
-                color: Colors.tealAccent,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (_documents.isEmpty)
+    return WillPopScope(
+      onWillPop: () async {
+        await _goBackToSurgeonDashboard();
+        return false; // ⛔ prevent app exit
+      },
+      child: Scaffold(
+
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: _goBackToSurgeonDashboard,
+          ),
+          title: Text("Patient History - ${widget.patientData['name']}"),
+          backgroundColor: Colors.tealAccent.withOpacity(0.3),
+        ),
+
+        backgroundColor: Colors.grey[600],
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: ListView(
+            children: [
+              _buildInfoCard("Patient ID", widget.patientData['patientId'] ?? 'N/A'),
+              _buildInfoCard("Name", widget.patientData['name'] ?? 'N/A'),
+              _buildInfoCard("Age", "${widget.patientData['age'] ?? 'N/A'}"),
+              _buildInfoCard("Gender", widget.patientData['gender'] ?? 'N/A'),
+              _buildInfoCard("Phone", widget.patientData['phone'] ?? 'N/A'),
+              _buildInfoCard("Email", widget.patientData['email'] ?? 'N/A'),
+              _buildInfoCard(
+                  "Assigned Doctor", widget.patientData['assignedDoctor'] ?? 'N/A'),
+              const SizedBox(height: 20),
               const Text(
-                "No documents uploaded.",
-                style: TextStyle(color: Colors.white70),
-              )
-            else
-              ..._documents.map(
-                    (doc) => Card(
-                  color: Colors.white.withOpacity(0.05),
-                  child: ListTile(
-                    title: Text(
-                      doc['fileName'] ?? 'Unknown',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.open_in_new,
-                          color: Colors.tealAccent),
-                      onPressed: () {
-                        if (_isNavigating) return;
-                        _micLocked = true;
-                        _stopMic();
-                        _openDocument(
-                          context,
-                          doc['fileUrl'],
-                          fileType: doc['fileType'],
-                        );
-                      },
+                "📁 Uploaded Documents",
+                style: TextStyle(
+                  color: Colors.tealAccent,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              if (_documents.isEmpty)
+                const Text(
+                  "No documents uploaded.",
+                  style: TextStyle(color: Colors.white70),
+                )
+              else
+                ..._documents.map(
+                      (doc) => Card(
+                    color: Colors.white.withOpacity(0.05),
+                    child: ListTile(
+                      title: Text(
+                        doc['fileName'] ?? 'Unknown',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.open_in_new,
+                            color: Colors.tealAccent),
+                        onPressed: () {
+                          if (_isNavigating) return;
+                          _micLocked = true;
+                          _stopMic();
+                          _openDocument(
+                            context,
+                            doc['fileUrl'],
+                            fileType: doc['fileType'],
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

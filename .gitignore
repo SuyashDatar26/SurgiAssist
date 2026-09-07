@@ -48,3 +48,5 @@ app.*.map.json
 *.tflite
 assets/*.tflite
 assets/models/*.tflite
+assets/models/model_to_convert_float16.tflite
+assets/model_to_convert_float16.tflite

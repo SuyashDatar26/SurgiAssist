@@ -12,7 +12,20 @@
           "package_name": "com.example.surgiassist_ibip_lnct"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "431648024865-a2cpfh6a9hsmsvgjt40kt2f50ofvn4n4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.surgiassist_ibip_lnct",
+            "certificate_hash": "3793cc6e1acec5b63fc4d5817a222bc85aeddb4c"
+          }
+        },
+        {
+          "client_id": "431648024865-8moebllati50grqoa84cjr32k1l3fnsb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBoU_hiaH7iOM4q4LDQy2cQ84Kdha6iwek"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "431648024865-8moebllati50grqoa84cjr32k1l3fnsb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "431648024865-esf4a8p4viispon8ia54gig4jgaqnjqh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.surgiassistIbipLnct"
+              }
+            }
+          ]
         }
       }
     }

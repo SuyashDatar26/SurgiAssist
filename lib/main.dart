@@ -1,186 +1,267 @@
-import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shimmer/shimmer.dart';
-import 'screens/admin/admin_dashboard.dart';
-import 'screens/login_page.dart';
-import 'screens/surgeon/surgeon_dashboard.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() async {
+import 'screens/splash_screen.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+// ============================================================
+// FIREBASE INITIALIZATION
+// ============================================================
+
   await Firebase.initializeApp();
-  runApp(MyApp());
+
+// ============================================================
+// SUPABASE INITIALIZATION
+// ============================================================
+//
+// Replace these two values with the credentials from your
+// Supabase project.
+//
+// Supabase Dashboard:
+// Project -> Connect / API
+//
+// Use the client-side Publishable Key (or legacy anon key),
+// NOT the service_role/secret key.
+// ============================================================
+
+  const String supabaseUrl = 'https://dwfoakrsoqiqpbjbonjq.supabase.co';
+
+  const String supabasePublishableKey =
+      'sb_publishable_HyPhbNAAflzg9e-Woe1wmw_kqehGfin';
+
+  await Supabase.initialize(
+    url: supabaseUrl,
+    publishableKey: supabasePublishableKey,
+  );
+
+// ============================================================
+// START APPLICATION
+// ============================================================
+
+  runApp(const SurgiAssistApp());
 }
 
-class MyApp extends StatelessWidget {
+// ============================================================
+// GLOBAL SUPABASE CLIENT
+// ============================================================
+//
+// You can use this anywhere in your application:
+//
+// supabase.from('table_name').select();
+//
+// supabase.storage.from('bucket_name').upload(...);
+//
+// ============================================================
+
+final SupabaseClient supabase = Supabase.instance.client;
+
+class SurgiAssistApp extends StatelessWidget {
+  const SurgiAssistApp({super.key});
+
+// ============================================================
+// SURGIASSIST COLOR PALETTE
+// ============================================================
+
+  static const Color deepNavy = Color(0xFF0B1F33);
+  static const Color navyBlue = Color(0xFF123A56);
+  static const Color surgicalTeal = Color(0xFF0E7490);
+  static const Color medicalCyan = Color(0xFF22D3EE);
+
+  static const Color softBackground = Color(0xFFF5F8FA);
+  static const Color white = Color(0xFFFFFFFF);
+
+  static const Color deepSlate = Color(0xFF172B3A);
+  static const Color slate = Color(0xFF64748B);
+
+  static const Color success = Color(0xFF16A34A);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color critical = Color(0xFFDC2626);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'SurgiAssist',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-        useMaterial3: true,
-      ),
-      home: SplashScreen(),
+
       debugShowCheckedModeBanner: false,
-    );
-  }
-}
 
-// 🌀 SPLASH SCREEN WITH AUTH CHECK
-class SplashScreen extends StatefulWidget {
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
+// ========================================================
+// APPLICATION THEME
+// ========================================================
 
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
+      theme: ThemeData(
+        useMaterial3: true,
 
-  @override
-  void initState() {
-    super.initState();
+        scaffoldBackgroundColor: softBackground,
 
-    _controller = AnimationController(
-      duration: const Duration(seconds: 3),
-      vsync: this,
-    )..forward();
+        colorScheme: const ColorScheme(
+          brightness: Brightness.light,
 
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOutCubic,
-    );
+          primary: deepNavy,
+          onPrimary: white,
 
-    // Check authentication state while splash animates
-    Timer(const Duration(seconds: 3), () async {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => LoginPage()),
-        );
-      } else {
-        final role = await getUserRole(user.uid);
-        if (role == 'admin') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => AdminDashboard()),
-          );
-        } else if (role == 'surgeon') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => SurgeonDashboard()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => Scaffold(
-                body: Center(child: Text('Invalid role detected')),
-              ),
-            ),
-          );
-        }
-      }
-    });
-  }
+          primaryContainer: navyBlue,
+          onPrimaryContainer: white,
 
-  Future<String?> getUserRole(String uid) async {
-    final doc =
-    await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    return doc.data()?['role'];
-  }
+          secondary: surgicalTeal,
+          onSecondary: white,
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+          secondaryContainer: Color(0xFFDDF6FA),
+          onSecondaryContainer: deepNavy,
 
-  // ✨ UI: Gradient + Glow + Shimmer Logo Text
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+          tertiary: medicalCyan,
+          onTertiary: deepNavy,
+
+          error: critical,
+          onError: white,
+
+          surface: white,
+          onSurface: deepSlate,
+
+          surfaceContainerHighest: Color(0xFFE8EEF2),
+        ),
+
+// ======================================================
+// TYPOGRAPHY
+// ======================================================
+
+        textTheme: GoogleFonts.poppinsTextTheme(),
+
+// ======================================================
+// APP BAR
+// ======================================================
+
+        appBarTheme: const AppBarTheme(
+          backgroundColor: white,
+          foregroundColor: deepNavy,
+          elevation: 0,
+          centerTitle: false,
+          surfaceTintColor: Colors.transparent,
+        ),
+
+// ======================================================
+// CARDS
+// ======================================================
+
+        cardTheme: const CardThemeData(
+          color: white,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          margin: EdgeInsets.zero,
+        ),
+
+// ======================================================
+// INPUT FIELDS
+// ======================================================
+
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: white,
+
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(
+              color: Color(0xFFD9E2E8),
             ),
           ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Circular glowing logo
-                Container(
-                  height: 120,
-                  width: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.tealAccent.withOpacity(0.8),
-                        blurRadius: 30,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: Image.asset(
-                    'assets/logo.png', // 🔥 Place your logo in assets folder
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(height: 40),
 
-                // App Name with shimmer effect
-                Shimmer.fromColors(
-                  baseColor: Colors.white,
-                  highlightColor: Colors.tealAccent,
-                  child: Text(
-                    "SurgiAssist",
-                    style: GoogleFonts.poppins(
-                      fontSize: 38,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  "AI-Powered Surgical Assistance",
-                  style: GoogleFonts.poppins(
-                    color: Colors.white70,
-                    fontSize: 16,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(
+              color: Color(0xFFD9E2E8),
+            ),
+          ),
 
-                const SizedBox(height: 80),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(
+              color: surgicalTeal,
+              width: 1.5,
+            ),
+          ),
 
-                // Animated Loading Indicator
-                SizedBox(
-                  height: 40,
-                  width: 40,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3.5,
-                    valueColor:
-                    AlwaysStoppedAnimation<Color>(Colors.tealAccent),
-                  ),
-                ),
-              ],
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(
+              color: critical,
+            ),
+          ),
+
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+        ),
+
+// ======================================================
+// ELEVATED BUTTONS
+// ======================================================
+
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: deepNavy,
+            foregroundColor: white,
+
+            elevation: 0,
+
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 15,
+            ),
+
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+
+            textStyle: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
             ),
           ),
         ),
+
+// ======================================================
+// OUTLINED BUTTONS
+// ======================================================
+
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: deepNavy,
+
+            side: const BorderSide(
+              color: surgicalTeal,
+              width: 1.2,
+            ),
+
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 15,
+            ),
+
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+
+// ======================================================
+// DIVIDERS
+// ======================================================
+
+        dividerTheme: const DividerThemeData(
+          color: Color(0xFFE2E8ED),
+          thickness: 1,
+        ),
       ),
+
+// ========================================================
+// INITIAL SCREEN
+// ========================================================
+
+      home: const SplashScreen(),
     );
   }
 }
